@@ -1,0 +1,136 @@
+---
+title: "HW3 - SDS 315"
+output: html_document
+date: "2024-02-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(RColorBrewer)
+library(minpack.lm)
+kidney <- read.csv('creatinine.csv')
+market <- read.csv('marketmodel.csv')
+library(mosaic)
+covid <- read.csv('covid.csv')
+library(patchwork)
+milk <- read.csv('milk.csv')
+```
+# Problem 1: 
+
+## (A): What creatinine clearance rate should we expect for a 55-year-old?
+```{r echo=FALSE, message=FALSE}
+age_ccr  = lm(creatclear ~ age, data=kidney)
+age_55 <- predict(age_ccr, newdata = data.frame(age=55))
+print(age_55)
+```
+
+### Description: 
+To be able to predict the clearance rate for a 55 year old I used the lm function to create the equation (creatine clearance rate = B0 + B1 x age) based off of the data with certain coefficients and utilized the predict function to hypothesize the creatine clearance rate with the linear model equation and the x variable (age) equaling to 55. As a result, the linear model equation displayed that the clearance creatind rate is about 113.723 when the age is 55. 
+
+## (B): How does creatinine clearance rate change with age?
+```{r echo=FALSE, message=FALSE}
+coef(age_ccr)
+```
+
+### Description:
+The creatine clearance rate changes with age by -0.6198159 ml/minute per year.I was able to determine this coefficient by using the coef function and inputting the linear model equation that I got previously with the lm function. 
+
+## (C): Whose creatinine clearance rate is healthier (higher) for their age: a 40-year-old with a rate of 135, or a 60-year-old with a rate of 112? 
+```{r echo=FALSE, message=FALSE}
+new_kidney_data = data.frame(age = c(40,60),
+                   creatclear = c(135, 112))
+kidney <- rbind(kidney, new_kidney_data)
+kidney_ccr = lm(creatclear ~ age, data=kidney)
+kidney %>%
+  mutate(kidney_resid = resid(kidney_ccr)) %>%
+  filter(creatclear %in% c(135, 112)) %>%
+  head(n = 2)
+```
+
+### Description 
+To be able to determine which creatine clearance rate is healthier, I have to first input a 40-year-old with a rate of 135 and a 60-year-old with a rate of 112 to the data, using the rbind function. Then, used the lm function again to create the equation (creatine clearance rate = B0 + B1 x age) based off of the data. The residual equation (residual = actual creatine clearance rate - predicted creatine clearance rate) is how to know which rate is better based off of ages. The predicted value in the equation is the creatine clearance rate produced by the linear model equation of the data.I utilized the mutate function to make a new variable of the residuals of the creatinine clearance rate. According to the residuals of the 40 year old and 60 year old, the 40 year old has a healthier creatine clearance rate with a higher value of 11.889439, while the 60 year old has a residual of about 1.249173.
+
+# Problem 2 
+
+## Introduction 
+The Capital Asset Pricing Model (CAPM) is an important model that displays a linear relationship through an equation between the rate of return of an individual asset and the rate of return of the overall stock market. The equation is Yt(k) = Beta0(k) + (Beta(k) x Xt) + et(k). Yt(k) is the rate of return of an individual stock, Xt is the rate of return of the entire stock market, Beta0(K) is the intercept, Beta(k) is the slope, and et(K) is the residual for the stock.The slope (Beta(k)) is the measure of systematic risk. Systematic risk is the risk associated with factors that affect the entire market and cannot be diversified away. Beta measures how much a asset's returns to changes in the market portfolio, and Beta represent the percentage change in an asset's return given a 1% change in the market portfolio. A beta higher than 1 indicates more systematic risk than average, while a beta less than 1 has less systematic risk than average. A firm with a beta of 0 has no systematic risk, meaning it is now influenced by market dynamics. Negative beta indicates a negative risk, with returns lower than the risk-free rate, acting like insurance during market downturns. For example, having a negative beta is unusual, but it can be beneficial when the overall market is doing poorly. 
+
+```{r echo =FALSE, message=FALSE}
+aapl  = lm(SPY ~ AAPL, data=market)
+aapl_coef = coef(aapl)
+rsq_aapl = rsquared(aapl)
+goog = lm(SPY ~ GOOG, data=market)
+goog_coef = coef(goog)
+rsq_goog = rsquared(goog)
+mrk = lm(SPY ~ MRK, data=market)
+mrk_coef = coef(mrk)
+rsq_mrk = rsquared(mrk)
+jnj = lm(SPY ~ JNJ, data=market)
+jnj_coef = coef(jnj)
+rsq_jnj = rsquared(jnj)
+wmt = lm(SPY ~ WMT, data=market)
+wmt_coef = coef(wmt)
+rsq_wmt = rsquared(wmt)
+tgt = lm(SPY ~ WMT, data=market)
+tgt_coef = coef(tgt)
+rsq_tgt = rsquared(tgt)
+market_tibble <- tibble( 
+  Symbol = c("AAPL", "GOOG", "MRK", "JNJ", "WMT", "TGT"),
+  Intercept = c(aapl_coef[1], goog_coef[1], mrk_coef[1], jnj_coef[1], wmt_coef[1], tgt_coef[1]),
+  Slope = c(aapl_coef[2], goog_coef[2], mrk_coef[2], jnj_coef[2], wmt_coef[2], tgt_coef[2]),
+  Rsquared = c(rsq_aapl, rsq_goog, rsq_mrk, rsq_jnj, rsq_wmt, rsq_tgt))
+  print(market_tibble)
+```
+### Description: 
+The table displays the relationship between each stock's returns and the SP 500 index. The table shows a column of the ticker symbols that represent the stocks: Apple (AAPL), Google (GOOG), Merck (MRK), Johnson and Johnson (JNJ), Wal-Mart (WMT), Target (TGT). Each row that corresponds to a stock displays the intercept, slope, and R-squared values of the regression model for that stock.
+
+## Conclusion: 
+Based off of the table, the stock Johnson and Johnson (JNJ)has the highest systematic risk with a slope (beta) of about 0.65. On the other hand, Apple (AAPL) has the lowest systematic risk with a slope (beta) of about .0125. This means that Johnson and Johnson has a higher likelihood of being influenced by overall market events, while Apple has a lower chance of being affected.
+
+# Problem 3
+```{r echo =FALSE, message=FALSE}
+italy_covid <- covid %>%
+  filter(country == "Italy")
+spain_covid <- covid %>%
+  filter(country == "Spain")
+ggplot() + 
+  geom_line(data = italy_covid, aes(x = days_since_first_death, y = deaths, color = 'Italy')) + 
+  geom_line(data = spain_covid, aes(x = days_since_first_death, y = deaths, color = 'Spain')) + labs(title = 'Daily Deaths from COVID Over Time', x = 'Days Since First Death', y = 'Daily Deaths' ) + scale_color_manual(values = c('Italy' = 'blue', 'Spain' = 'red')) + theme_minimal()
+lm_italy = lm(log(deaths) ~ days_since_first_death, data=italy_covid)
+lm_spain = lm(log(deaths) ~ days_since_first_death, data=spain_covid)
+italy_coef<- coef(lm_italy)
+spain_coef <- coef(lm_spain)
+italy_doubling = 70/(italy_coef[2]*100)
+spain_doubling = 70/(spain_coef[2]*100)
+print(italy_coef)
+print(italy_doubling)
+print(spain_coef)
+print(spain_doubling)
+italy_mean <- mean(italy_covid$deaths)
+italy_max <- max(italy_covid$deaths)
+italy_min <- min(italy_covid$deaths)
+spain_mean <- mean(spain_covid$deaths)
+spain_max <- max(spain_covid$deaths)
+spain_min <- min(spain_covid$deaths)
+italy_mean
+italy_max
+italy_min
+spain_mean
+spain_max
+spain_min
+```
+### Description 
+This line graph illustrates the daily deaths from COVID over time Italy and Spain. The graph has two lines; the blue line represents Italy and the red line represents Spain. The x axis is the days since the first death and the y axis is the daily deaths. The Italy graph has a higher mean of about 318.718, a higher max of about 971.000, and a minimum of about 1.000. The Spain graph has a lower mean of about 292.464, a lower max of about 849.000, and a same minimum of about 1.000.  Both of the lines started to increase drastically after about 15 days. From this graph, it can be hypothesized that Italy has more deaths from COVID than Spain and that both countries' deaths increase after about 15 days. The estimated growth rate for Italy is about 0.183 and the doubling time of the daily death total for Italy is about 4 (3.82) days. The estimated growth rate for Spain is about 0.276 and the doubling time of the daily death total for Spain is about 3 (2.53) days. I was able to derive these values by using a linear regression on the logarithm of deaths.
+
+# Problem 4 
+```{r echo =FALSE, message=FALSE}
+lm_milk = lm(log(sales) ~ log(price), data=milk)
+coef(lm_milk)
+```
+### Description: 
+The elasticity between estimated price and the demand for milk is about -1.62, meaning when the price of milk changes by 1%, x changes by 1%, sales change by  -1.62%, on average. I calculated the elasticity by using the lm function and inside the function I set sales and price in terms of log. Then I utilized the coef function to get the coefficients from the linear regression model: slope (beta) and intercept The elasticity, which describes relative proportional change in y versus which beta represents. 
